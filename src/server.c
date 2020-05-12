@@ -52,7 +52,7 @@ static int startup(uint16_t port) {
     // Here simplely ignore this SIG
     signal(SIGPIPE, SIG_IGN);
     signal(SIGINT, sig_int);
-    
+
     // Open socket, bind and listen
     int listen_fd = 0;
     struct sockaddr_in server_addr = {0};
@@ -85,14 +85,14 @@ static int server_init(void) {
     // Set limits
     struct rlimit nofile_limit = {65535, 65535};
     setrlimit(RLIMIT_NOFILE, &nofile_limit);
-    
+
     parse_init();
     header_map_init();
     mime_map_init();
-    
+
     pool_init(&connection_pool, sizeof(connection_t), 8, 0);
     pool_init(&request_pool, sizeof(request_t), 8, 0);
-    
+
     epoll_fd = epoll_create1(0);
     ABORT_ON(epoll_fd == ERROR, "epoll_create1");
     return OK;
@@ -120,7 +120,9 @@ int main(int argc, char* argv[]) {
         default: usage(); break;
         }
     }
-
+    return start_server;
+}
+int start_server(){
     get_pid();
     if (config_load(&server_cfg) != OK) {
         raise(SIGINT);
@@ -161,10 +163,10 @@ work:;
     int listen_fd;
     if (server_init() != OK ||
         (listen_fd = startup(server_cfg.port)) < 0) {
-        ju_error("startup server failed");        
+        ju_error("startup server failed");
         exit(ERROR);
     }
-    
+
     ju_log("julia started...");
     ju_log("listening at port: %u", server_cfg.port);
     assert(add_listener(&listen_fd) != ERROR);
@@ -174,7 +176,7 @@ wait:;
     if (nfds == ERROR) {
         ABORT_ON(errno != EINTR, "epoll_wait");
     }
-    
+
     // TODO(wgtdkp): multithreading here: separate fds to several threads
     for (int i = 0; i < nfds; ++i) {
         int fd = *((int*)(events[i].data.ptr));
@@ -183,7 +185,7 @@ wait:;
             accept_connection(listen_fd);
             continue;
         }
-        
+
         int err;
         connection_t* c = events[i].data.ptr;
         if (!connection_is_expired(c) && (events[i].events & EPOLLIN)) {

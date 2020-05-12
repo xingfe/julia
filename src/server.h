@@ -49,13 +49,15 @@
 /*
  * Config
  */
-typedef enum {
-    PROT_HTTP,
-    PROT_UWSGI, // support only uwsgi
-    PROT_FCGI,
-} protocol_t;
+enum protocol_t
+    {
+     PROT_ERROR,
+     PROT_HTTP,
+     PROT_UWSGI, // support only uwsgi
+     PROT_FCGI,
+    } ;
 
-typedef struct {
+struct location_t{
     bool pass;
     int fd;
     string_t path;
@@ -63,18 +65,23 @@ typedef struct {
     string_t host;
     uint16_t port;
     protocol_t protocol;
-} location_t;
+} ;
 
-typedef struct {
+struct config_t{
     uint16_t port;
     int root_fd;
     bool debug;
     bool daemon;
     int timeout;
-    vector_t workers;
-    vector_t locations;
+    vector<worker_t> workers;
+    vector<location_t> locations;
     char* text;
-} config_t;
+    ~config_t(){
+        if(text != NULL){
+            free(text);
+        }
+    }
+} ;
 
 extern config_t server_cfg;
 
@@ -219,10 +226,10 @@ typedef struct request {
     transfer_encoding_t t_encoding;
     int content_length;
     int body_received;
-    
+
     buffer_t rb;
     int (*in_handler)(struct request* r);
-    
+
     // Response
     buffer_t sb;
     int (*out_handler)(struct request* r);
@@ -304,7 +311,7 @@ static inline int connection_enable_out(connection_t* c) {
                          c->fd, &c->event);
     }
     return 0;
-} 
+}
 
 /*
  * Request
